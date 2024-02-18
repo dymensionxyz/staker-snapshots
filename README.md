@@ -2,7 +2,9 @@
 
 This repo contains historical snapshots of Dymension stakers. These snapshots are provided by Dymension validators. Snapshots follow the following format in CSV: 
 
-File name: `validator_YYYYMMDD.csv: staked DYM and its owners`
+File name: `validator_YYYYMMDD.csv`
+
+Format: staked DYM and its owners
 
 ```csv
 delagatoraddress, delegated dym;
