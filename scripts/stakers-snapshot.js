@@ -101,7 +101,7 @@ async function run() {
       }
 
       const validatorDetails = JSON.parse(stdout);
-      const status = validatorDetails?.validator?.status;
+      const status = validatorDetails?.status;
 
       // Determine active or inactive based on status
       const delegators = status === 'BOND_STATUS_BONDED' ? activeDelegators : inactiveDelegators;
