@@ -129,7 +129,7 @@ function generateCsvString(delegators) {
     const hex_addr = convertToHex(delgator_dym_addr);
     if (!hex_addr) continue;
     const staked = delegators[delgator_dym_addr];
-    csvString += `${hex_addr},${staked};\n`;
+    csvString += `${hex_addr.toLowerCase()},${staked};\n`;
   }
   return csvString;
 }
