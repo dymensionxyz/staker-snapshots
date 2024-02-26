@@ -89,35 +89,63 @@ async function fetchValidators() {
  * Main function to fetch delegators and write them to a CSV file.
  */
 async function run() {
-    let delegators = {};
-    try {
-        const v_addresses = await fetchValidators();
-        for (const v_addr of v_addresses) {
-            await fetchDelegators(v_addr, delegators);
-        }
+  let activeDelegators = {};
+  let inactiveDelegators = {};
 
-        let csvString = '';
-        for (const delgator_dym_addr in delegators) {
-            const hex_addr = convertToHex(delgator_dym_addr);
-            if (!hex_addr) continue;
-            const staked = delegators[delgator_dym_addr];
-            csvString += `${hex_addr},${staked};\n`;
-        }
+  try {
+    const v_addresses = await fetchValidators();
+    for (const v_addr of v_addresses) {
+      const { stdout, stderr } = await exec(`dymd query staking validator ${v_addr} -o json`);
+      if (stderr) {
+        throw new Error(stderr);
+      }
 
-        // Get current date to use in the filename
-        const date = new Date();
-        const dateString = `${date.getFullYear()}${("0" + (date.getMonth() + 1)).slice(-2)}${("0" + date.getDate()).slice(-2)}`;
+      const validatorDetails = JSON.parse(stdout);
+      const status = validatorDetails?.validator?.status;
 
-        fs.writeFile(`validator_${dateString}.csv`, csvString, (err) => {
-            if (err) {
-                console.error('Error writing CSV file:', err);
-                return;
-            }
-            console.log('CSV file written successfully');
-        });
-    } catch (error) {
-        console.error(`An error occurred during execution: ${error}`);
+      // Determine active or inactive based on status
+      const delegators = status === 'BOND_STATUS_BONDED' ? activeDelegators : inactiveDelegators;
+
+      await fetchDelegators(v_addr, delegators);
     }
+
+    // Write active validators to file
+    const activeCsvString = generateCsvString(activeDelegators);
+    const activeFilename = generateFilename('active_validators');
+    fs.writeFile(activeFilename, activeCsvString, handleFileWriteError);
+
+    // Write inactive validators to file
+    const inactiveCsvString = generateCsvString(inactiveDelegators);
+    const inactiveFilename = generateFilename('inactive_validators');
+    fs.writeFile(inactiveFilename, inactiveCsvString, handleFileWriteError);
+  } catch (error) {
+    console.error(`An error occurred during execution: ${error}`);
+  }
+}
+
+function generateCsvString(delegators) {
+  let csvString = '';
+  for (const delgator_dym_addr in delegators) {
+    const hex_addr = convertToHex(delgator_dym_addr);
+    if (!hex_addr) continue;
+    const staked = delegators[delgator_dym_addr];
+    csvString += `${hex_addr},${staked};\n`;
+  }
+  return csvString;
+}
+
+function handleFileWriteError(err) {
+  if (err) {
+    console.error('Error writing CSV file:', err);
+    return;
+  }
+  console.log('CSV file written successfully');
+}
+
+function generateFilename(type) {
+  const date = new Date();
+  const dateString = `${date.getFullYear()}${("0" + (date.getMonth() + 1)).slice(-2)}${("0" + date.getDate()).slice(-2)}`;
+  return `${type}_${dateString}.csv`;
 }
 
 run();
