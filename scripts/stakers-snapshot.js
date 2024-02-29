@@ -111,12 +111,12 @@ async function run() {
 
     // Write active validators to file
     const activeCsvString = generateCsvString(activeDelegators);
-    const activeFilename = generateFilename('active_validators');
+    const activeFilename = generateFilename('gatorhead_active_validators');
     fs.writeFile(activeFilename, activeCsvString, handleFileWriteError);
 
     // Write inactive validators to file
     const inactiveCsvString = generateCsvString(inactiveDelegators);
-    const inactiveFilename = generateFilename('inactive_validators');
+    const inactiveFilename = generateFilename('gatorhead_inactive_validators');
     fs.writeFile(inactiveFilename, inactiveCsvString, handleFileWriteError);
   } catch (error) {
     console.error(`An error occurred during execution: ${error}`);
