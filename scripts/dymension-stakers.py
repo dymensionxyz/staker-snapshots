@@ -96,6 +96,7 @@ def fetch_delegations_with_retry(validator_address):
                 return delegators_data
             else:
                 print("Received None from fetch_delegations. Retrying...")
+                retries += 1
         except RuntimeError as e:
             print(f"Error fetching delegations: {e}. Retrying... (Attempt {retries + 1}/{MAX_RETRIES})")
             time.sleep(RETRY_DELAY_SECONDS)
