@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 import bech32
 import binascii
-
+import time
 # change accordingly, and it is recommended to use your personal RPC
 binary="dymd"
 rpc="tcp://127.0.0.1:26657"
@@ -80,9 +80,32 @@ def fetch_delegations(validator_address):
 
     if len(delegations) < total_delegator:
         # we may have more delegations
-        print(f"We didn't capture all delegators. Total is {total_delegator} is above {len(delegations)}")
-        exit(1)
+        error_message = f"We didn't capture all delegators. Total is {total_delegator} is above {len(delegations)}"
+        raise RuntimeError(error_message)
     return delegations
+
+
+def fetch_delegations_with_retry(validator_address):
+    MAX_RETRIES = 3
+    RETRY_DELAY_SECONDS = 5
+    retries = 0
+    while retries < MAX_RETRIES:
+        try:
+            delegators_data = fetch_delegations(validator_address)
+            if delegators_data is not None:
+                return delegators_data
+            else:
+                print("Received None from fetch_delegations. Retrying...")
+        except RuntimeError as e:
+            print(f"Error fetching delegations: {e}. Retrying... (Attempt {retries + 1}/{MAX_RETRIES})")
+            time.sleep(RETRY_DELAY_SECONDS)
+            retries += 1
+        except Exception as e:
+            print(f"An error occurred: {e} Retrying... (Attempt {retries + 1}/{MAX_RETRIES})")
+            time.sleep(RETRY_DELAY_SECONDS)
+            retries += 1
+    print(f"Max retries reached. Failed to fetch delegations after {MAX_RETRIES} attempts.")
+    exit(1)
 
 # Retrieve Validators and delegators
 delegator_stakes = {}
@@ -93,7 +116,7 @@ if validators_data:
     validator_addresses = [validator["operator_address"] for validator in validators_data]
     active_validator_address_only = [validator["operator_address"] for validator in validators_data if validator["status"] == "BOND_STATUS_BONDED"]
     for validator_address in validator_addresses:
-        delegators_data = fetch_delegations(validator_address)
+        delegators_data = fetch_delegations_with_retry(validator_address)
         for delegations in delegators_data:
             # first time adding the delegator to the dictionnary
             if delegator_stakes.get(delegations["delegation"]["delegator_address"]) is None:
